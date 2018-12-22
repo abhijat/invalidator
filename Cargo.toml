@@ -1,0 +1,12 @@
+[package]
+name = "invalidator"
+version = "0.1.0"
+authors = ["Abhijat Malviya <malviya.abhijat@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+bit-vec = "0.5.0"
+fasthash = "0.3"
+rand = "0.6.1"
+simplelog = "^0.5.0"
+log = "0.4.6"
