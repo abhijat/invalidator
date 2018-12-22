@@ -1,109 +1,38 @@
+extern crate actix_web;
 extern crate fasthash;
-#[macro_use]
-extern crate log;
 extern crate rand;
+extern crate serde;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde_json;
 extern crate simplelog;
 
-use bit_vec::BitVec;
-use fasthash::metro;
-use rand::{
-    distributions::Alphanumeric,
-    Rng,
-    thread_rng,
-};
-use simplelog::{
-    Config,
-    LevelFilter,
-    TermLogger,
-};
-use std::collections::HashSet;
+use std::sync::Arc;
+use std::sync::Mutex;
 
-fn hash_pairs(payload: &str) -> (u128, u128) {
-    let first_hash = metro::hash64(&payload);
-    let second_hash = metro::hash64(&format!("{:x}", first_hash));
-    (first_hash as u128, second_hash as u128)
-}
+use actix_web::*;
+use simplelog::{Config, LevelFilter, TermLogger};
 
-struct BloomFilter {
-    n_bits: u128,
-    n_hashes: u128,
-    backing_store: BitVec,
-}
+use crate::bloom_filter::{AppState, BloomFilter};
+use crate::handlers::{check_keys, push_keys};
 
-impl BloomFilter {
-    fn new() -> Self {
-        let n_bits = u128::pow(2, 32);
+mod bloom_filter;
+mod api;
+mod handlers;
 
-        BloomFilter {
-            n_bits,
-            n_hashes: 5,
-            backing_store: BitVec::from_elem(n_bits as usize, false),
-        }
-    }
-
-    fn add(&mut self, item: &str) {
-        let (first, second) = hash_pairs(item);
-        for i in 0..self.n_hashes {
-            let index = first + (i * second);
-            let index = index & (self.n_bits - 1);
-            self.backing_store.set(index as usize, true);
-        }
-    }
-
-    fn get(&self, item: &str) -> bool {
-        let (first, second) = hash_pairs(item);
-        for i in 0..self.n_hashes {
-            let index = first + (i * second);
-            let index = index & (self.n_bits - 1);
-            if !self.backing_store.get(index as usize).unwrap() {
-                return false;
-            }
-        }
-        true
-    }
-}
-
-pub fn exercise_filter() {
-    let mut filter = BloomFilter::new();
-    info!("created filter");
-
-    let data_size = 1000 * 1000 * 10;
-    let mut words: HashSet<String> = HashSet::with_capacity(data_size);
-
-    for _ in 0..data_size {
-        let word: String = thread_rng().sample_iter(&Alphanumeric)
-            .take(4)
-            .collect();
-        filter.add(&word);
-        words.insert(word);
-    }
-
-    info!("initialized data");
-    for word in words.iter() {
-        if !filter.get(word) {
-            error!("uh oh -  a false negative");
-            panic!()
-        }
-    }
-    info!("false negative tests complete");
-    let mut false_positives = 0;
-    for word in words.iter() {
-        let upper = word.to_uppercase();
-        let r = format!("{}{}{}", upper, upper, upper);
-
-        if filter.get(&r) {
-            if words.contains(&r) {
-                error!("false collision");
-            } else {
-                false_positives += 1;
-            }
-        }
-    }
-    info!("false_positives: {} of {} elements checked were missed", false_positives, words.len());
-}
 
 fn main() {
     TermLogger::init(LevelFilter::Debug, Config::default())
         .expect("failed to initialize logger");
-    exercise_filter();
+
+    let bloom_filter_ref =
+        Arc::new(Mutex::new(BloomFilter::new()));
+
+    server::new(move ||
+        App::with_state(AppState { filter: bloom_filter_ref.clone() })
+            .resource("/push", |r| r.method(http::Method::POST).with(push_keys))
+            .resource("/check", |r| r.method(http::Method::POST).with(check_keys)))
+        .bind("127.0.0.1:3333")
+        .unwrap()
+        .run();
 }
