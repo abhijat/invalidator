@@ -16,6 +16,7 @@ use simplelog::{
     LevelFilter,
     TermLogger,
 };
+use std::collections::HashSet;
 
 fn hash_pairs(payload: &str) -> (u128, u128) {
     let first_hash = metro::hash64(&payload);
@@ -32,6 +33,7 @@ struct BloomFilter {
 impl BloomFilter {
     fn new() -> Self {
         let n_bits = u128::pow(2, 32);
+
         BloomFilter {
             n_bits,
             n_hashes: 5,
@@ -62,19 +64,18 @@ impl BloomFilter {
 }
 
 pub fn exercise_filter() {
-
     let mut filter = BloomFilter::new();
     info!("created filter");
 
     let data_size = 1000 * 1000 * 10;
-    let mut words: Vec<String> = Vec::with_capacity(data_size);
+    let mut words: HashSet<String> = HashSet::with_capacity(data_size);
 
     for _ in 0..data_size {
         let word: String = thread_rng().sample_iter(&Alphanumeric)
-            .take(24)
+            .take(4)
             .collect();
         filter.add(&word);
-        words.push(word);
+        words.insert(word);
     }
 
     info!("initialized data");
@@ -87,9 +88,15 @@ pub fn exercise_filter() {
     info!("false negative tests complete");
     let mut false_positives = 0;
     for word in words.iter() {
-        let r = word.to_ascii_uppercase();
+        let upper = word.to_uppercase();
+        let r = format!("{}{}{}", upper, upper, upper);
+
         if filter.get(&r) {
-            false_positives += 1;
+            if words.contains(&r) {
+                error!("false collision");
+            } else {
+                false_positives += 1;
+            }
         }
     }
     info!("false_positives: {} of {} elements checked were missed", false_positives, words.len());
