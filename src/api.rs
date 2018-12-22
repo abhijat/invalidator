@@ -30,8 +30,15 @@ impl Responder for FilteredResponse {
     type Item = HttpResponse;
     type Error = Error;
 
-    fn respond_to<S: 'static>(self, req: &HttpRequest<S>) -> Result<HttpResponse, Error> {
+    fn respond_to<S: 'static>(self, _request: &HttpRequest<S>) -> Result<HttpResponse, Error> {
         let body = serde_json::to_string(&self)?;
-        Ok(HttpResponse::Ok().content_type("application/json").body(body))
+        Ok(HttpResponse::Ok()
+            .content_type("application/json")
+            .body(body))
     }
+}
+
+#[derive(Deserialize)]
+pub struct KeysRequest {
+    pub keys: Vec<String>,
 }
