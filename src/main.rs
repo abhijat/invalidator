@@ -2,10 +2,6 @@ extern crate actix_web;
 extern crate bloom_filter;
 extern crate fasthash;
 extern crate rand;
-extern crate serde;
-#[macro_use]
-extern crate serde_derive;
-extern crate serde_json;
 extern crate simplelog;
 
 use std::sync::Arc;
@@ -16,11 +12,7 @@ use simplelog::{Config, LevelFilter, TermLogger};
 
 use bloom_filter::{AppState, BloomFilter};
 
-use crate::handlers::{check_keys, push_keys};
-
-mod api;
-mod handlers;
-
+use bloom_filter::handlers::{check_keys, push_keys};
 
 fn main() {
     TermLogger::init(LevelFilter::Debug, Config::default())

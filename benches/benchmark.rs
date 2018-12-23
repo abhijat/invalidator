@@ -7,6 +7,7 @@ use criterion::Criterion;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 use rand::thread_rng;
+
 use bloom_filter::BloomFilter;
 
 fn data_set_of_size(size: usize, word_size: usize) -> HashSet<String> {
