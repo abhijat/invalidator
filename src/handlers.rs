@@ -8,7 +8,7 @@ pub fn push_keys((request, payload): (HttpRequest<AppState>, Json<KeysRequest>))
     let items = &payload.keys;
 
     let mut filter = request.state().filter.lock().unwrap();
-    items.iter().for_each(|item| filter.add(item));
+    items.iter().for_each(|item| filter.put(item));
 
     Ok(HttpResponse::Ok()
         .json(

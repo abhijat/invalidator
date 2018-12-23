@@ -1,4 +1,5 @@
 extern crate actix_web;
+extern crate bloom_filter;
 extern crate fasthash;
 extern crate rand;
 extern crate serde;
@@ -13,10 +14,10 @@ use std::sync::Mutex;
 use actix_web::*;
 use simplelog::{Config, LevelFilter, TermLogger};
 
-use crate::bloom_filter::{AppState, BloomFilter};
+use bloom_filter::{AppState, BloomFilter};
+
 use crate::handlers::{check_keys, push_keys};
 
-mod bloom_filter;
 mod api;
 mod handlers;
 

@@ -16,3 +16,18 @@ serde = "^1.0.0"
 serde_json = "^1.0.0"
 serde_derive = "^1.0.0"
 futures = "0.1"
+
+[dev-dependencies]
+criterion = "0.2"
+
+[[bench]]
+name = "benchmark"
+harness = false
+
+[lib]
+name = "bloom_filter"
+path = "src/lib.rs"
+
+[[bin]]
+name = "invalidator"
+path = "src/main.rs"
